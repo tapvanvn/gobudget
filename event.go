@@ -1,6 +1,8 @@
 package gobudget
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func NewEvent(name EventName) *Event {
 
@@ -128,4 +130,43 @@ func (event *Event) Claim(routeName RouteName, element map[BudgetName]int64) (bo
 		}
 	}
 	return true, nil
+}
+
+func (event *Event) Reset() error {
+
+	for _, budget := range event.budgets {
+		if __eng == nil {
+
+			return ErrInvalidDBEngine
+		}
+
+		memPool := __eng.GetMemPool()
+		err := memPool.SetInt(budget.GetClaimedKey(event.prefixAndEvent), 0)
+		if err != nil {
+
+			return err
+		}
+	}
+	return nil
+}
+
+func (event *Event) GetReport() (map[BudgetName]int64, error) {
+
+	report := map[BudgetName]int64{}
+
+	for _, budget := range event.budgets {
+		if __eng == nil {
+
+			return nil, ErrInvalidDBEngine
+		}
+
+		memPool := __eng.GetMemPool()
+		claimed, err := memPool.GetInt(budget.GetClaimedKey(event.prefixAndEvent))
+		if err != nil {
+
+			return nil, err
+		}
+		report[budget.Name] = claimed
+	}
+	return report, nil
 }
