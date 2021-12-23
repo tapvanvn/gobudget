@@ -12,21 +12,22 @@ type Budget struct {
 	Total  int64
 }
 
-func (budget *Budget) CurrentPeriodID() int64 {
+func (budget *Budget) CurrentPeriodID(timeAdjust int64) int64 {
 
 	if budget.Period == -1 {
 
 		return 0
 	}
-	return time.Now().Unix() / budget.Period
+	now := time.Now().Unix() + timeAdjust
+	return now / budget.Period
 }
 
-func (budget *Budget) GetClaimedKey(prefixAndEvent string) string {
+func (budget *Budget) GetClaimedKey(prefixAndEvent string, timeAdjust int64) string {
 
-	return fmt.Sprintf("%s.%s.%d", prefixAndEvent, budget.Name, budget.CurrentPeriodID())
+	return fmt.Sprintf("%s.%s.%d", prefixAndEvent, budget.Name, budget.CurrentPeriodID(timeAdjust))
 }
 
-func getBudgetClaimed(prefixAndEvent string, budget *Budget) (int64, error) {
+func getBudgetClaimed(prefixAndEvent string, timeAdjust int64, budget *Budget) (int64, error) {
 
 	if __eng == nil {
 
@@ -35,10 +36,10 @@ func getBudgetClaimed(prefixAndEvent string, budget *Budget) (int64, error) {
 
 	memPool := __eng.GetMemPool()
 
-	return memPool.GetInt(budget.GetClaimedKey(prefixAndEvent))
+	return memPool.GetInt(budget.GetClaimedKey(prefixAndEvent, timeAdjust))
 }
 
-func claimBudget(prefixAndEvent string, budget *Budget, amount int64) (int64, error) {
+func claimBudget(prefixAndEvent string, timeAdjust int64, budget *Budget, amount int64) (int64, error) {
 
 	if __eng == nil {
 
@@ -46,5 +47,5 @@ func claimBudget(prefixAndEvent string, budget *Budget, amount int64) (int64, er
 	}
 
 	memPool := __eng.GetMemPool()
-	return memPool.IncrIntBy(budget.GetClaimedKey(prefixAndEvent), amount)
+	return memPool.IncrIntBy(budget.GetClaimedKey(prefixAndEvent, timeAdjust), amount)
 }

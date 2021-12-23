@@ -35,6 +35,12 @@ type Event struct {
 	budgets        map[BudgetName]*Budget
 	routes         map[RouteName]*Route
 	prefixAndEvent string
+	timeAdjust     int64
+}
+
+func (event *Event) SetTimeAdjust(timeAdjust int64) {
+
+	event.timeAdjust = timeAdjust
 }
 
 func (event *Event) AddBudget(budget *Budget) {
@@ -96,7 +102,7 @@ func (event *Event) Measure(routeName RouteName, element map[BudgetName]int64) (
 			return false, ErrBudgetNotExisted
 		}
 
-		claimed, err := getBudgetClaimed(event.prefixAndEvent, budget)
+		claimed, err := getBudgetClaimed(event.prefixAndEvent, event.timeAdjust, budget)
 		if err != nil {
 
 			return false, err
@@ -122,7 +128,7 @@ func (event *Event) Claim(routeName RouteName, element map[BudgetName]int64) (bo
 		budget, _ := event.budgets[budgetName]
 		amount, _ := element[budgetName]
 
-		_, err := claimBudget(event.prefixAndEvent, budget, amount)
+		_, err := claimBudget(event.prefixAndEvent, event.timeAdjust, budget, amount)
 
 		if err != nil {
 
@@ -141,7 +147,7 @@ func (event *Event) Reset() error {
 		}
 
 		memPool := __eng.GetMemPool()
-		err := memPool.SetInt(budget.GetClaimedKey(event.prefixAndEvent), 0)
+		err := memPool.SetInt(budget.GetClaimedKey(event.prefixAndEvent, event.timeAdjust), 0)
 		if err != nil {
 
 			return err
@@ -161,7 +167,7 @@ func (event *Event) GetReport() (map[BudgetName]int64, error) {
 		}
 
 		memPool := __eng.GetMemPool()
-		claimed, err := memPool.GetInt(budget.GetClaimedKey(event.prefixAndEvent))
+		claimed, err := memPool.GetInt(budget.GetClaimedKey(event.prefixAndEvent, event.timeAdjust))
 		if err != nil {
 
 			return nil, err
