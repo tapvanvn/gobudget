@@ -215,6 +215,7 @@ func (event *Event) GetReport() (map[BudgetName][]int64, error) {
 			return nil, err
 		}
 		report[budget.Name] = []int64{
+			budget.Total,
 			claimed,
 			recovered,
 		}
