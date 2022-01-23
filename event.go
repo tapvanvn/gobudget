@@ -9,6 +9,12 @@ type Recover struct {
 	IssuedTime int64
 }
 
+type Report struct {
+	Budget    int64
+	Claimed   int64
+	Recovered int64
+}
+
 func NewEvent(name EventName) *Event {
 
 	event := &Event{
@@ -206,9 +212,9 @@ func (event *Event) Reset() error {
 	return nil
 }
 
-func (event *Event) GetReport() (map[BudgetName][]int64, error) {
+func (event *Event) GetReport() (map[BudgetName]*Report, error) {
 
-	report := map[BudgetName][]int64{}
+	report := map[BudgetName]*Report{}
 
 	for _, budget := range event.budgets {
 		if __eng == nil {
@@ -224,10 +230,10 @@ func (event *Event) GetReport() (map[BudgetName][]int64, error) {
 
 			return nil, err
 		}
-		report[budget.Name] = []int64{
-			budget.Total,
-			claimed,
-			recovered,
+		report[budget.Name] = &Report{
+			Budget:    budget.Total,
+			Claimed:   claimed,
+			Recovered: recovered,
 		}
 	}
 	return report, nil
