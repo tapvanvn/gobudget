@@ -108,16 +108,22 @@ func (event *Event) Measure(routeName RouteName, element map[BudgetName]int64) (
 		}
 
 		claimed, err := getBudgetClaimed(event.prefixAndEvent, event.timeAdjust, budget)
-		recovered, err := getBudgetRecoverd(event.prefixAndEvent, event.timeAdjust, budget)
-		ajustedClaimed := claimed - recovered
-		if ajustedClaimed < 0 {
-			ajustedClaimed = 0
-		}
 		if err != nil {
 
 			return false, err
 
-		} else if ajustedClaimed+amount > budget.Total {
+		}
+		recovered, err := getBudgetRecoverd(event.prefixAndEvent, event.timeAdjust, budget)
+		if err != nil {
+
+			return false, err
+
+		}
+		ajustedClaimed := claimed - recovered
+		if ajustedClaimed < 0 {
+			ajustedClaimed = 0
+		}
+		if ajustedClaimed+amount > budget.Total {
 
 			return false, ErrOutOfBudget
 		}
@@ -159,14 +165,18 @@ func (event *Event) Recover(routeName RouteName, element map[BudgetName]*Recover
 
 	for _, budgetName := range route.Trail {
 
-		budget, _ := event.budgets[budgetName]
-		recover, _ := element[budgetName]
+		budget, has := event.budgets[budgetName]
+		if !has {
+			return ErrBudgetNotExisted
+		}
+		if recover, has := element[budgetName]; has {
 
-		err := recoveredBudget(event.prefixAndEvent, event.timeAdjust, budget, recover.IssuedTime, recover.Total)
+			err := recoveredBudget(event.prefixAndEvent, event.timeAdjust, budget, recover.IssuedTime, recover.Total)
 
-		if err != nil {
+			if err != nil {
 
-			return err
+				return err
+			}
 		}
 	}
 	return nil
