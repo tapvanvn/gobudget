@@ -8,6 +8,7 @@ var __events map[EventName]*Event = map[EventName]*Event{}
 func InitGoBudget(eng *engine.Engine) error {
 	memdb := eng.GetMemPool()
 	if memdb == nil {
+
 		return ErrInvalidDBEngine
 	}
 	__eng = eng
@@ -15,5 +16,6 @@ func InitGoBudget(eng *engine.Engine) error {
 }
 
 func AddEvent(event *Event) {
+
 	__events[event.Name] = event
 }

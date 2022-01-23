@@ -4,6 +4,11 @@ import (
 	"fmt"
 )
 
+type Recover struct {
+	Total      int64
+	IssuedTime int64
+}
+
 func NewEvent(name EventName) *Event {
 
 	event := &Event{
@@ -103,11 +108,16 @@ func (event *Event) Measure(routeName RouteName, element map[BudgetName]int64) (
 		}
 
 		claimed, err := getBudgetClaimed(event.prefixAndEvent, event.timeAdjust, budget)
+		recovered, err := getBudgetRecoverd(event.prefixAndEvent, event.timeAdjust, budget)
+		ajustedClaimed := claimed - recovered
+		if ajustedClaimed < 0 {
+			ajustedClaimed = 0
+		}
 		if err != nil {
 
 			return false, err
 
-		} else if claimed+amount > budget.Total {
+		} else if ajustedClaimed+amount > budget.Total {
 
 			return false, ErrOutOfBudget
 		}
@@ -138,9 +148,34 @@ func (event *Event) Claim(routeName RouteName, element map[BudgetName]int64) (bo
 	return true, nil
 }
 
+func (event *Event) Recover(routeName RouteName, element map[BudgetName]*Recover) error {
+
+	route, hasRoute := event.routes[routeName]
+
+	if !hasRoute {
+
+		return ErrRouteNotExisted
+	}
+
+	for _, budgetName := range route.Trail {
+
+		budget, _ := event.budgets[budgetName]
+		recover, _ := element[budgetName]
+
+		err := recoveredBudget(event.prefixAndEvent, event.timeAdjust, budget, recover.IssuedTime, recover.Total)
+
+		if err != nil {
+
+			return err
+		}
+	}
+	return nil
+}
+
 func (event *Event) Reset() error {
 
 	for _, budget := range event.budgets {
+
 		if __eng == nil {
 
 			return ErrInvalidDBEngine
@@ -152,13 +187,18 @@ func (event *Event) Reset() error {
 
 			return err
 		}
+		err = memPool.SetInt(budget.GetRecoveredKey(event.prefixAndEvent, event.timeAdjust), 0)
+		if err != nil {
+
+			return err
+		}
 	}
 	return nil
 }
 
-func (event *Event) GetReport() (map[BudgetName]int64, error) {
+func (event *Event) GetReport() (map[BudgetName][]int64, error) {
 
-	report := map[BudgetName]int64{}
+	report := map[BudgetName][]int64{}
 
 	for _, budget := range event.budgets {
 		if __eng == nil {
@@ -168,11 +208,16 @@ func (event *Event) GetReport() (map[BudgetName]int64, error) {
 
 		memPool := __eng.GetMemPool()
 		claimed, err := memPool.GetInt(budget.GetClaimedKey(event.prefixAndEvent, event.timeAdjust))
+		recovered, err := memPool.GetInt(budget.GetRecoveredKey(event.prefixAndEvent, event.timeAdjust))
+
 		if err != nil {
 
 			return nil, err
 		}
-		report[budget.Name] = claimed
+		report[budget.Name] = []int64{
+			claimed,
+			recovered,
+		}
 	}
 	return report, nil
 }

@@ -13,3 +13,5 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+example/recovered/exam_recovered
+example/general/exam_general

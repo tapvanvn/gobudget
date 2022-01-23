@@ -33,3 +33,7 @@
 
 ### Event Init
 - Budget 
+
+### Recoverd 
+- This feature is purposed to recover the budget in case user cancel a budget.
+- Note that the total in Recover object will be ```SET``` directly to recovered value of the budget, not ```ADD``` to current value of recoverd value of the budget. It's purpose is for simply synchonize process.
